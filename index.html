@@ -1,160 +1,161 @@
-
 <html>
+<head>
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/github-fork-ribbon-css/0.2.3/gh-fork-ribbon.min.css" />
 
-<script>
+  <script>
 
-    var search = Array();
+      var search = Array();
 
-    // Check if something you been mentioned in is true
-    function mentionedMe(where) {
-        where = where.toLowerCase()
+      // Check if something you been mentioned in is true
+      function mentionedMe(where) {
+          where = where.toLowerCase()
 
-        for (var i = 0; i < search.length; i++) {
-            if (where.indexOf("@" + search[i]) > 0) return search[i];
-        }
-        return 0;
+          for (var i = 0; i < search.length; i++) {
+              if (where.indexOf("@" + search[i]) > 0) return search[i];
+          }
+          return 0;
 
-    }
+      }
 
-    // Add text to DIV
-    function AddText(txt) {
-        var x = document.getElementById("content");
-        x.innerHTML = x.innerHTML + txt;
-    }
+      // Add text to DIV
+      function AddText(txt) {
+          var x = document.getElementById("content");
+          x.innerHTML = x.innerHTML + txt;
+      }
 
-    //Run list
-    function UpdateList() {
-        var x = document.getElementById("content").innerHTML = "";
-        document.getElementById("loading").style.visibility = 'visible';
+      //Run list
+      function UpdateList() {
+          var x = document.getElementById("content").innerHTML = "";
+          document.getElementById("loading").style.visibility = 'visible';
 
-        var foruser = document.getElementById("name").value.toLowerCase();
-        if (foruser == "") {
-            alert("error no name entered");
-            return;
-        }
+          var foruser = document.getElementById("name").value.toLowerCase();
+          if (foruser == "") {
+              alert("error no name entered");
+              return;
+          }
 
-        //Get list of teams user is in
-        teams = getObject("https://api.github.com/user/teams");//getObject("https://api.github.com/orgs/hyphacoop/teams");
-        if (teams == undefined) {
-            alert("Authentication Failed");
-            return;
-        }
-
-
-        // push items to look for
-        search.push(foruser)
-        for (var i = 0; i < teams.length; i++) {
-            if (teams[i].organization.login == "hyphacoop")
-                search.push("hyphacoop/" + teams[i].slug);
-        }
-
-        AddText("<h1>Mentions for " + search.join() + "</h1>");
-
-        // Get repos of hypha
-        repos = getObject("https://api.github.com/orgs/hyphacoop/repos");
-
-        // Loop through repos looking for tags
-        for (var repID = 0; repID < repos.length; repID++) {
+          //Get list of teams user is in
+          teams = getObject("https://api.github.com/user/teams");//getObject("https://api.github.com/orgs/hyphacoop/teams");
+          if (teams == undefined) {
+              alert("Authentication Failed");
+              return;
+          }
 
 
-            document.getElementById("location").innerHTML="Repo " + repos[repID].name;
-            // Look for comments **NOTE*
-            // This does not include All comments so there is a cut off here based on number of comments
-            // ##TODO## maybe itterate to get more comments if needed
-            json = getObject("https://api.github.com/repos/hyphacoop/" + repos[repID].name + "/issues/comments?sort=created&direction=desc");
+          // push items to look for
+          search.push(foruser)
+          for (var i = 0; i < teams.length; i++) {
+              if (teams[i].organization.login == "hyphacoop")
+                  search.push("hyphacoop/" + teams[i].slug);
+          }
 
-            // First item flag for title
-            firstItem = 0;
+          AddText("<h1>Mentions for " + search.join() + "</h1>");
 
-            // Loop through comments
-            for (var i = 0; i < json.length; i++) {
+          // Get repos of hypha
+          repos = getObject("https://api.github.com/orgs/hyphacoop/repos");
 
-                var show = true;
-
-                // Check to see if you or your teams have been mentioend
-                foundWhat = mentionedMe(json[i].body);
-                if (json[i].user.login.toLowerCase() == foruser.toLowerCase()) { show = false }
-
-                // If found (and if your showing)
-                if (foundWhat && show) {
-
-                    // Grab issue
-                    // ##TODO## Possibly cache this so its not pulling every time
-                    var issue = getObject(json[i].issue_url);
-                    labels = "";
-                    for (var j = 0; j < issue.labels.length; j++) {
-                        labels = labels + issue.labels[j].name + " ";
-                    }
-
-                    url = json[i].html_url; //Url of comment
-                    title = issue.title; //Title of issue
-                    dt = json[i].created_at;  //When was it created
-
-                    // Get first match snippet (100 characters before + after)
-                    indexPos = json[i].body.toLowerCase().indexOf("@" + foundWhat);
-                    body = json[i].body;
-                    indexPos = indexPos - 100;
-                    if (indexPos < 0) indexPos = 0
-                    body = body.substring(indexPos);
-                    if (body.length > 200)
-                        body = body.substring(0, 200) + "...";
-                    if (indexPos > 0) body = "..." + body;
-
-                    // Pull reactions
-                    react = getObject(json[i].url + "/reactions");
-                    reacts = "";
-                    for (var j = 0; j < react.length; j++) {
-                        // You responded.. Dont show this
-                        if (react[j].user.login.toLowerCase() == foruser.toLowerCase()) { show = false }
-                        reacts = reacts + react[j].content + " ";
-                    }
-
-                    console.log(react);
-                    console.log(json[i]);
-
-                    //Show the entry
-                    if (show) {
-                        // If this is a first time (0) then add heading
-                        if (firstItem == 0) {
-                            AddText("<h2>Mentions in " + repos[repID].name + "</h2>");
-                        }
-                        firstItem = 1; // Not first anymore
-                        AddText("<div class='item'><h3>" + title + " (<a href='" + url + "'>More</a>)</h3> <b>" + labels + " </b> - " + reacts + "<br>" + dt + "<br><br>" + body + "</div>");
-                    }
-                }
-            }
-        }
-
-        document.getElementById("loading").style.visibility = 'hidden';
-
-    }
+          // Loop through repos looking for tags
+          for (var repID = 0; repID < repos.length; repID++) {
 
 
-    // Sync ajax request
-    function getObject(url) {
+              document.getElementById("location").innerHTML="Repo " + repos[repID].name;
+              // Look for comments **NOTE*
+              // This does not include All comments so there is a cut off here based on number of comments
+              // ##TODO## maybe itterate to get more comments if needed
+              json = getObject("https://api.github.com/repos/hyphacoop/" + repos[repID].name + "/issues/comments?sort=created&direction=desc");
 
-        var request = new XMLHttpRequest();
-        request.open('GET', url, false);
+              // First item flag for title
+              firstItem = 0;
 
-        // #TODO - github is phasing this auth out
-        var username = document.getElementById("name").value;
-        var password = document.getElementById("password").value;
+              // Loop through comments
+              for (var i = 0; i < json.length; i++) {
 
-        request.setRequestHeader("Authorization", "Basic " + btoa(username + ":" + password))
+                  var show = true;
 
-        // Enables experimental features in github
-        request.setRequestHeader("Accept", "application/vnd.github.squirrel-girl-preview+json");
+                  // Check to see if you or your teams have been mentioend
+                  foundWhat = mentionedMe(json[i].body);
+                  if (json[i].user.login.toLowerCase() == foruser.toLowerCase()) { show = false }
 
-        request.send(null);
-        if (request.status === 200) {
-            return JSON.parse(request.responseText);
-        }
-    }
+                  // If found (and if your showing)
+                  if (foundWhat && show) {
+
+                      // Grab issue
+                      // ##TODO## Possibly cache this so its not pulling every time
+                      var issue = getObject(json[i].issue_url);
+                      labels = "";
+                      for (var j = 0; j < issue.labels.length; j++) {
+                          labels = labels + issue.labels[j].name + " ";
+                      }
+
+                      url = json[i].html_url; //Url of comment
+                      title = issue.title; //Title of issue
+                      dt = json[i].created_at;  //When was it created
+
+                      // Get first match snippet (100 characters before + after)
+                      indexPos = json[i].body.toLowerCase().indexOf("@" + foundWhat);
+                      body = json[i].body;
+                      indexPos = indexPos - 100;
+                      if (indexPos < 0) indexPos = 0
+                      body = body.substring(indexPos);
+                      if (body.length > 200)
+                          body = body.substring(0, 200) + "...";
+                      if (indexPos > 0) body = "..." + body;
+
+                      // Pull reactions
+                      react = getObject(json[i].url + "/reactions");
+                      reacts = "";
+                      for (var j = 0; j < react.length; j++) {
+                          // You responded.. Dont show this
+                          if (react[j].user.login.toLowerCase() == foruser.toLowerCase()) { show = false }
+                          reacts = reacts + react[j].content + " ";
+                      }
+
+                      console.log(react);
+                      console.log(json[i]);
+
+                      //Show the entry
+                      if (show) {
+                          // If this is a first time (0) then add heading
+                          if (firstItem == 0) {
+                              AddText("<h2>Mentions in " + repos[repID].name + "</h2>");
+                          }
+                          firstItem = 1; // Not first anymore
+                          AddText("<div class='item'><h3>" + title + " (<a href='" + url + "'>More</a>)</h3> <b>" + labels + " </b> - " + reacts + "<br>" + dt + "<br><br>" + body + "</div>");
+                      }
+                  }
+              }
+          }
+
+          document.getElementById("loading").style.visibility = 'hidden';
+
+      }
 
 
-</script>
+      // Sync ajax request
+      function getObject(url) {
+
+          var request = new XMLHttpRequest();
+          request.open('GET', url, false);
+
+          // #TODO - github is phasing this auth out
+          var username = document.getElementById("name").value;
+          var password = document.getElementById("password").value;
+
+          request.setRequestHeader("Authorization", "Basic " + btoa(username + ":" + password))
+
+          // Enables experimental features in github
+          request.setRequestHeader("Accept", "application/vnd.github.squirrel-girl-preview+json");
+
+          request.send(null);
+          if (request.status === 200) {
+              return JSON.parse(request.responseText);
+          }
+      }
+  </script>
+</head>
 
 <body>
+    <a class="github-fork-ribbon" href="https://github.com/patcon/hyphacoop-mentions-app/" data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
     <form>
         <style>
             .item {
